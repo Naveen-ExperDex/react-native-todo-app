@@ -4,7 +4,6 @@ import { Checkbox } from "expo-checkbox";
 import { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   Image,
   KeyboardAvoidingView,
   StyleSheet,
@@ -13,6 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DraggableFlatList, {
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface Todo {
@@ -57,7 +59,7 @@ export default function Index() {
       title: todoText,
       isDone: false,
     };
-    const updated = [...todos, newTodo];
+    const updated = [newTodo, ...todos];
     setTodos(updated);
     saveTodos(updated);
     setTodoText("");
@@ -99,24 +101,30 @@ export default function Index() {
       );
     };
     return (
-      <View style={styles.todoList}>
-        <Checkbox
-          value={item.isDone}
-          color={item.isDone ? "#4630EB" : undefined}
-          onValueChange={() => toggleTodo(item.id)}
-        />
-        <Text
-          style={[
-            styles.todoText,
-            item.isDone && { textDecorationLine: "line-through" },
-          ]}
-        >
-          {item.title}
-        </Text>
-        <TouchableOpacity onPress={confirmDelete}>
-          <Ionicons size={24} name="trash" color={"red"} />
-        </TouchableOpacity>
-      </View>
+      <ScaleDecorator activeScale={1.06}>
+        <View style={styles.todoList}>
+          <Checkbox
+            value={item.isDone}
+            color={item.isDone ? "#4630EB" : undefined}
+            onValueChange={() => toggleTodo(item.id)}
+          />
+          <Text
+            style={[
+              styles.todoText,
+              item.isDone && {
+                opacity: 0.5,
+                textDecorationLine: "line-through",
+                color: "#999",
+              },
+            ]}
+          >
+            {item.title}
+          </Text>
+          <TouchableOpacity onPress={confirmDelete}>
+            <Ionicons size={24} name="trash" color={"red"} />
+          </TouchableOpacity>
+        </View>
+      </ScaleDecorator>
     );
   };
 
@@ -158,13 +166,19 @@ export default function Index() {
         </View>
         {/* todo list */}
         {filteredTodos.length > 0 ? (
-          <FlatList
-            data={[...filteredTodos].reverse()}
+          <DraggableFlatList
+            data={filteredTodos}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <RenderItem item={item} onDelete={deleteTodo} />
+            renderItem={({ item, drag }) => (
+              <TouchableOpacity onLongPress={drag} activeOpacity={1} style={{paddingHorizontal: 10}}>
+                <RenderItem item={item} onDelete={deleteTodo} />
+              </TouchableOpacity>
             )}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+            onDragEnd={({ data }) => {
+              setTodos(data);
+              saveTodos(data);
+            }}
           />
         ) : (
           <View
